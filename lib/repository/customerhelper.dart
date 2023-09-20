@@ -29,7 +29,7 @@ class Helper {
   }
 
   String formatAsCurrency(double value) {
-    return '₱ ${toCurrencyString(value.toString())}';
+    return '${toCurrencyString(value.toString())}';
   }
 
   Future<void> deleteFile(String filepath) async {
