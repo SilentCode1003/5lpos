@@ -58,12 +58,21 @@ class _MyDashboardState extends State<MyDashboard> {
   String tin = "";
   String posid = "";
   String shift = "";
+  String branchid = "";
   bool isStartShift = false;
   bool isEndShift = false;
+
+  double splitcash = 0;
+  double splitepayamount = 0;
+  double remaining = 0;
 
   final TextEditingController _serialNumberController = TextEditingController();
   final TextEditingController _referenceidController = TextEditingController();
   final TextEditingController _receiptORController = TextEditingController();
+  final TextEditingController _splitCashController = TextEditingController();
+  final TextEditingController _splitReferenceidController =
+      TextEditingController();
+  final TextEditingController _splitAmountController = TextEditingController();
 
   Helper helper = Helper();
   DatabaseHelper dbHelper = DatabaseHelper();
@@ -76,6 +85,14 @@ class _MyDashboardState extends State<MyDashboard> {
     _getposconfig();
     _getcategory();
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _splitCashController.dispose();
+    _splitAmountController.dispose();
+
+    super.dispose();
   }
 
   Future<void> _getPOSShift(posid) async {
@@ -117,7 +134,8 @@ class _MyDashboardState extends State<MyDashboard> {
           );
         });
 
-    final results = await POSShiftLogAPI().startShift(posid);
+    final results = await POSShiftLogAPI()
+        .startShift(posid, widget.fullname, (detailid + 1).toString());
     // final jsonData = json.encode(results['data']);
     print(results['msg']);
 
@@ -161,7 +179,7 @@ class _MyDashboardState extends State<MyDashboard> {
           );
         });
 
-    final results = await POSShiftLogAPI().endShift(posid);
+    final results = await POSShiftLogAPI().endShift(posid, detailid.toString());
     // final jsonData = json.encode(results['data']);
     print(results['msg']);
 
@@ -231,31 +249,65 @@ class _MyDashboardState extends State<MyDashboard> {
             );
           });
     } else {
+      int cash = 0;
+      int ecash = 0;
+      String ornumber = '';
+      String ordate = '';
+      String ordescription = '';
+      String orpaymenttype = '';
+      String posid = '';
+      String shift = '';
+      String cashier = '';
+      String total = '';
+      String epaymentname = '';
+      String referenceid = '';
       for (var data in json.decode(jsonData)) {
-        int amount = data['amount'];
+        setState(() {
+          ornumber = data['ornumber'];
+          ordate = data['ordate'];
+          ordescription = data['ordescription'];
+          orpaymenttype = data['orpaymenttype'];
+          posid = data['posid'];
+          shift = data['shift'];
+          cashier = data['cashier'];
+          total = data['total'];
+          epaymentname = data['epaymentname'];
+          referenceid = data['referenceid'];
 
-        final pdfBytes = ReprintingReceipt(
-                data['ornumber'],
-                data['ordate'],
-                data['ordescription'],
-                data['orpaymenttype'],
-                data['posid'],
-                data['shift'],
-                data['cashier'],
-                double.parse(data['total']),
-                data['epaymentname'],
-                data['referenceid'],
-                amount.toDouble())
-            .printReceipt();
-
-        if (Platform.isWindows) {
-          List<Printer> printerList = await Printing.listPrinters();
-          for (var printer in printerList) {
-            if (printer.isDefault) {
-              Printing.directPrintPdf(
-                  printer: printer,
-                  onLayout: (PdfPageFormat format) => pdfBytes);
+          if (orpaymenttype == 'SPLIT') {
+            print(orpaymenttype);
+            if (data['paymentmethod'] != 'Cash') {
+              ecash = data['amount'];
+            } else {
+              cash = data['amount'];
             }
+          } else {
+            cash = data['amount'];
+          }
+        });
+      }
+
+      final pdfBytes = await ReprintingReceipt(
+              ornumber,
+              ordate,
+              ordescription,
+              orpaymenttype,
+              posid,
+              shift,
+              cashier,
+              double.parse(total),
+              epaymentname,
+              referenceid,
+              cash.toDouble(),
+              ecash.toDouble())
+          .printReceipt();
+
+      if (Platform.isWindows) {
+        List<Printer> printerList = await Printing.listPrinters();
+        for (var printer in printerList) {
+          if (printer.isDefault) {
+            Printing.directPrintPdf(
+                printer: printer, onLayout: (PdfPageFormat format) => pdfBytes);
           }
         }
       }
@@ -298,35 +350,64 @@ class _MyDashboardState extends State<MyDashboard> {
 
         return 'notfound';
       } else {
+        int cash = 0;
+        int ecash = 0;
+        String ornumber = '';
+        String ordate = '';
+        String ordescription = '';
+        String orpaymenttype = '';
+        String posid = '';
+        String shift = '';
+        String cashier = '';
+        String total = '';
+        String epaymentname = '';
+        String referenceid = '';
         for (var data in json.decode(jsonData)) {
-          int amount = data['amount'];
+          setState(() {
+            ornumber = data['ornumber'];
+            ordate = data['ordate'];
+            ordescription = data['ordescription'];
+            orpaymenttype = data['orpaymenttype'];
+            posid = data['posid'];
+            shift = data['shift'];
+            cashier = data['cashier'];
+            total = data['total'];
+            epaymentname = data['epaymentname'];
+            referenceid = data['referenceid'];
 
-          final pdfBytes = await ReprintingReceipt(
-                  data['ornumber'],
-                  data['ordate'],
-                  data['ordescription'],
-                  data['orpaymenttype'],
-                  data['posid'],
-                  data['shift'],
-                  data['cashier'],
-                  double.parse(data['total']),
-                  data['epaymentname'],
-                  data['referenceid'],
-                  amount.toDouble())
-              .printReceipt();
-
-          List<Map<String, dynamic>> items = List<Map<String, dynamic>>.from(
-              jsonDecode(data['ordescription']));
-
-          await Email().sendMail(
-              data['ornumber'],
-              email,
-              pdfBytes,
-              data['cashier'],
-              items,
-              data['orpaymenttype'],
-              data['referenceid']);
+            if (orpaymenttype == 'SPLIT') {
+              print(orpaymenttype);
+              if (data['paymentmethod'] != 'Cash') {
+                ecash = data['amount'];
+              } else {
+                cash = data['amount'];
+              }
+            } else {
+              cash = data['amount'];
+            }
+          });
         }
+
+        final pdfBytes = await ReprintingReceipt(
+                ornumber,
+                ordate,
+                ordescription,
+                orpaymenttype,
+                posid,
+                shift,
+                cashier,
+                double.parse(total),
+                epaymentname,
+                referenceid,
+                cash.toDouble(),
+                ecash.toDouble())
+            .printReceipt();
+
+        List<Map<String, dynamic>> items =
+            List<Map<String, dynamic>>.from(jsonDecode(ordescription));
+
+        await Email().sendMail(ornumber, email, pdfBytes, cashier, items,
+            epaymentname, referenceid);
       }
     }
     return 'success';
@@ -341,6 +422,13 @@ class _MyDashboardState extends State<MyDashboard> {
         print(posid);
         _getdetailid(posid);
         _getPOSShift(posid);
+      });
+    }
+
+    List<Map<String, dynamic>> branchconfig = await db.query('branch');
+    for (var branch in branchconfig) {
+      setState(() {
+        branchid = branch['branchid'].toString();
       });
     }
   }
@@ -495,65 +583,85 @@ class _MyDashboardState extends State<MyDashboard> {
   }
 
   void _showSimpleDialog(BuildContext context, category) async {
-    _getcategoryitems(category);
-
-    showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return LoadingSpinner(
-            message: 'Loading',
-          );
-        });
-
-    Future.delayed(const Duration(milliseconds: 1200), () {
-      Navigator.of(context).pop();
-
-      final List<Widget> product = List<Widget>.generate(
-          productList.length,
-          (index) => SizedBox(
-                height: 60,
-                width: 120,
-                child: ElevatedButton(
+    if (isStartShift != false) {
+      showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Shift'),
+              content: const Text(
+                  'Shift not yet started. Go to OTHERS >> START SHIFT to start shift'),
+              actions: [
+                TextButton(
                   onPressed: () {
-                    // Add your button press logic here
-                    addItem(productList[index].description,
-                        double.parse(productList[index].price), 1);
+                    Navigator.of(context).pop(); // Close the dialog
                   },
-                  child: Text(
-                    productList[index].description,
-                    style: const TextStyle(
-                        fontSize: 12, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
+                  child: const Text('OK'),
                 ),
-              ));
+              ],
+            );
+          });
+    } else {
+      _getcategoryitems(category);
 
       showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Center(child: Text('Products')),
-            content: SingleChildScrollView(
-              child: Center(
-                child: Wrap(
-                    spacing: 8, // Adjust the spacing between buttons
-                    runSpacing: 8, // Adjust the vertical spacing between rows
-                    children: product),
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return LoadingSpinner(
+              message: 'Loading',
+            );
+          });
+
+      Future.delayed(const Duration(milliseconds: 1200), () {
+        Navigator.of(context).pop();
+
+        final List<Widget> product = List<Widget>.generate(
+            productList.length,
+            (index) => SizedBox(
+                  height: 60,
+                  width: 120,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Add your button press logic here
+                      addItem(productList[index].description,
+                          double.parse(productList[index].price), 1);
+                    },
+                    child: Text(
+                      productList[index].description,
+                      style: const TextStyle(
+                          fontSize: 12, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ));
+
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Center(child: Text('Products')),
+              content: SingleChildScrollView(
+                child: Center(
+                  child: Wrap(
+                      spacing: 8, // Adjust the spacing between buttons
+                      runSpacing: 8, // Adjust the vertical spacing between rows
+                      children: product),
+                ),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop(); // Close the dialog
-                },
-                child: const Text('Close'),
-              ),
-            ],
-          );
-        },
-      );
-    });
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: const Text('Close'),
+                ),
+              ],
+            );
+          },
+        );
+      });
+    }
   }
 
   void others() {
@@ -631,6 +739,12 @@ class _MyDashboardState extends State<MyDashboard> {
                                       _getdetails(context, receiptOR);
                                     },
                                     child: const Text('Print'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () async {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: const Text('Close'),
                                   ),
                                 ],
                               );
@@ -814,7 +928,9 @@ class _MyDashboardState extends State<MyDashboard> {
           items,
           total,
           cashier,
-          cashAmount.toString());
+          cashAmount.toString(),
+          '0',
+          branchid);
       final pdfBytes = await Receipt(
               itemsList,
               cashAmount,
@@ -827,7 +943,8 @@ class _MyDashboardState extends State<MyDashboard> {
               tin,
               paymenttype,
               referenceid,
-              paymentname)
+              paymentname,
+              0)
           .printReceipt();
 
       if (result['msg'] == 'success') {
@@ -924,7 +1041,7 @@ class _MyDashboardState extends State<MyDashboard> {
                                               pdfBytes,
                                               cashier,
                                               itemsList,
-                                              paymenttype,
+                                              paymentname,
                                               referenceid);
 
                                           Navigator.of(context).pop();
@@ -1034,7 +1151,229 @@ class _MyDashboardState extends State<MyDashboard> {
   void _clearItems() {
     setState(() {
       itemsList.clear();
+      _referenceidController.clear();
+      _splitReferenceidController.clear();
+      _splitCashController.clear();
+      _splitAmountController.clear();
     });
+  }
+
+  double _remaining() {
+    double total = calculateGrandTotal();
+
+    setState(() {
+      remaining = total - (splitcash + splitepayamount);
+    });
+
+    return remaining;
+  }
+
+  Future<void> _splitpayment(
+      double cashamount,
+      double epayamount,
+      String paymentmethod,
+      String referenceid,
+      String epaymentname,
+      String detailid,
+      String cashier,
+      String items) async {
+    final TextEditingController _emailController = TextEditingController();
+    double total = cashamount + epayamount;
+    final result = await POSTransaction().sending(
+      detailid,
+      helper.GetCurrentDatetime(),
+      posid,
+      shift,
+      paymentmethod,
+      referenceid,
+      epaymentname,
+      items,
+      total.toString(),
+      cashier,
+      cashamount.toString(),
+      epayamount.toString(),
+      branchid,
+    );
+
+    final pdfBytes = await Receipt(
+            itemsList,
+            cashamount,
+            detailid,
+            posid,
+            cashier,
+            shift,
+            companyname,
+            address,
+            tin,
+            paymentmethod,
+            referenceid,
+            epaymentname,
+            epayamount)
+        .printReceipt();
+
+    if (result['msg'] == 'success') {
+      Navigator.of(context);
+      if (Platform.isAndroid) {
+        // Printing.layoutPdf(
+        //   onLayout: (PdfPageFormat format) => pdfBytes,
+        // );
+
+        // Printing.directPrintPdf(
+        //     printer: const Printer(url: ''),
+        //     onLayout: (PdfPageFormat format) => pdfBytes);
+      } else if (Platform.isWindows) {
+        List<Printer> printerList = await Printing.listPrinters();
+        for (var printer in printerList) {
+          if (printer.isDefault) {
+            Printing.directPrintPdf(
+                printer: printer, onLayout: (PdfPageFormat format) => pdfBytes);
+          }
+        }
+      }
+
+      // ignore: use_build_context_synchronously
+      showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Success'),
+              content: const Text('Transaction process successfully!'),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                    _clearItems();
+                  },
+                  child: const Text('OK'),
+                ),
+                TextButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text('Customer Email'),
+                              content: Container(
+                                height: 200,
+                                width: 200,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    TextField(
+                                      controller: _emailController,
+                                      keyboardType: TextInputType.emailAddress,
+                                      decoration: const InputDecoration(
+                                          labelText: "Customer Email",
+                                          hintText: 'you@example.com'),
+                                    )
+                                  ],
+                                ),
+                              ),
+                              actions: [
+                                TextButton(
+                                    onPressed: () async {
+                                      String email = _emailController.text;
+                                      if (isValidEmail(email)) {
+                                        String message = '';
+
+                                        showDialog(
+                                            context: context,
+                                            barrierDismissible: false,
+                                            builder: (BuildContext context) {
+                                              return LoadingSpinner(
+                                                message: 'Sending...',
+                                              );
+                                            });
+                                        message = await Email().sendMail(
+                                            detailid.toString(),
+                                            email,
+                                            pdfBytes,
+                                            cashier,
+                                            itemsList,
+                                            epaymentname,
+                                            referenceid);
+
+                                        Navigator.of(context).pop();
+
+                                        if (message != 'success') {
+                                        } else {
+                                          Navigator.of(context).pop();
+                                          showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                  title: const Text('Success'),
+                                                  content: const Text(
+                                                      'E-Receipt sent successfully!'),
+                                                  actions: [
+                                                    TextButton(
+                                                        onPressed: () {
+                                                          Navigator.of(context)
+                                                              .pop();
+                                                        },
+                                                        child: const Text('Ok'))
+                                                  ],
+                                                );
+                                              });
+
+                                          _clearItems();
+                                        }
+                                      } else {
+                                        showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title: const Text('Invalid'),
+                                                content: const Text(
+                                                    'Invalid Email Address!'),
+                                                actions: [
+                                                  TextButton(
+                                                      onPressed: () {
+                                                        Navigator.of(context)
+                                                            .pop();
+                                                      },
+                                                      child:
+                                                          const Text('Close'))
+                                                ],
+                                              );
+                                            });
+                                      }
+                                    },
+                                    child: const Text("Send")),
+                                TextButton(
+                                    onPressed: () {
+                                      Navigator.of(context).pop();
+                                    },
+                                    child: const Text("Close")),
+                              ],
+                            );
+                          });
+                    },
+                    child: const Text('Send E-Receipt')),
+              ],
+            );
+          });
+    } else {
+      // ignore: use_build_context_synchronously
+      showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Error'),
+              content: Text(
+                  'Please inform administrator. Thank you! ${result['status']}'),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: const Text('OK'),
+                ),
+              ],
+            );
+          });
+    }
   }
 
   @override
@@ -1057,9 +1396,8 @@ class _MyDashboardState extends State<MyDashboard> {
                 ),
               ),
             ));
-
-    String selectedValue = 'Select Payment Type';
     List<String> options = ['Select Payment Type', 'Gcash', 'Paymaya', 'Card'];
+    String splitEPaymentType = options.first;
 
     return Scaffold(
       appBar: AppBar(
@@ -1282,9 +1620,7 @@ class _MyDashboardState extends State<MyDashboard> {
                 ),
               ],
             ),
-
             const SizedBox(height: 5), //DIVIDER START
-
             Container(
               color: Colors.grey[200],
               padding: const EdgeInsets.all(8.0),
@@ -1368,7 +1704,9 @@ class _MyDashboardState extends State<MyDashboard> {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
-                              content: Row(
+                              content: Wrap(
+                                spacing: 4,
+                                runSpacing: 4,
                                 children: [
                                   ElevatedButton(
                                     onPressed: () {
@@ -1709,16 +2047,22 @@ class _MyDashboardState extends State<MyDashboard> {
                                                   ],
                                                 ),
                                               ),
+                                              actions: [
+                                                TextButton(
+                                                    onPressed: () {
+                                                      Navigator.of(context)
+                                                          .pop();
+                                                    },
+                                                    child: Text('Close'))
+                                              ],
                                             );
                                           });
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      minimumSize: const Size(120, 100),
+                                      minimumSize: const Size(120, 60),
                                     ),
                                     child: const Text('E-PAYMENT'),
                                   ),
-                                  const SizedBox(
-                                      width: 16), // Add spacing between buttons
                                   ElevatedButton(
                                     onPressed: () {
                                       showDialog(
@@ -1824,8 +2168,8 @@ class _MyDashboardState extends State<MyDashboard> {
                                                         calculateGrandTotal()
                                                             .toString(),
                                                         widget.fullname,
-                                                        'none',
-                                                        'none');
+                                                        'CASH',
+                                                        'CASH');
 
                                                     Navigator.of(context).pop();
                                                     Navigator.of(context).pop();
@@ -1842,16 +2186,249 @@ class _MyDashboardState extends State<MyDashboard> {
                                                 ),
                                                 child: const Text('Proceed'),
                                               ),
+                                              TextButton(
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                  child: Text('Close'))
                                             ],
                                           );
                                         },
                                       );
                                     },
                                     style: ElevatedButton.styleFrom(
-                                      minimumSize: const Size(120, 100),
+                                      minimumSize: const Size(120, 60),
                                     ),
                                     child: const Text('CASH'),
                                   ),
+                                  ElevatedButton(
+                                      onPressed: () {
+                                        _remaining();
+
+                                        showDialog(
+                                            context: context,
+                                            builder: (BuildContext context) {
+                                              return AlertDialog(
+                                                title: Text('Split Payment'),
+                                                content: Column(
+                                                  mainAxisSize:
+                                                      MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                        'Please collect cash from the customer. Total: ${formatAsCurrency(calculateGrandTotal())}'),
+                                                    const SizedBox(
+                                                      height: 10,
+                                                    ),
+                                                    TextField(
+                                                      keyboardType:
+                                                          TextInputType.number,
+                                                      inputFormatters: [
+                                                        CurrencyInputFormatter(
+                                                          leadingSymbol:
+                                                              CurrencySymbols
+                                                                  .PESO,
+                                                        ),
+                                                      ],
+                                                      onChanged: (value) {
+                                                        String numericValue =
+                                                            value.replaceAll(
+                                                          RegExp(
+                                                              '[${CurrencySymbols.PESO},]'),
+                                                          '',
+                                                        );
+
+                                                        setState(() {
+                                                          splitcash =
+                                                              double.tryParse(
+                                                                      numericValue) ??
+                                                                  0;
+
+                                                          _remaining();
+                                                        });
+                                                      },
+                                                      controller:
+                                                          _splitCashController,
+                                                      decoration:
+                                                          const InputDecoration(
+                                                        hintText:
+                                                            'Enter amount',
+                                                        border:
+                                                            OutlineInputBorder(),
+                                                      ),
+                                                    ),
+                                                    const SizedBox(
+                                                      height: 50,
+                                                    ),
+                                                    DropdownMenu(
+                                                      initialSelection:
+                                                          options.first,
+                                                      onSelected:
+                                                          (String? value) {
+                                                        setState(() {
+                                                          splitEPaymentType =
+                                                              value!;
+                                                        });
+                                                      },
+                                                      dropdownMenuEntries:
+                                                          options.map<
+                                                              DropdownMenuEntry<
+                                                                  String>>((String
+                                                              value) {
+                                                        return DropdownMenuEntry<
+                                                                String>(
+                                                            value: value,
+                                                            label: value);
+                                                      }).toList(),
+                                                    ),
+                                                    TextField(
+                                                      controller:
+                                                          _splitReferenceidController,
+                                                      decoration: InputDecoration(
+                                                          labelText:
+                                                              "Reference ID"),
+                                                    ),
+                                                    const SizedBox(
+                                                      height: 10,
+                                                    ),
+                                                    TextField(
+                                                      controller:
+                                                          _splitAmountController,
+                                                      inputFormatters: [
+                                                        CurrencyInputFormatter(
+                                                          leadingSymbol:
+                                                              CurrencySymbols
+                                                                  .PESO,
+                                                        ),
+                                                      ],
+                                                      onChanged: (value) {
+                                                        String numericValue =
+                                                            value.replaceAll(
+                                                          RegExp(
+                                                              '[${CurrencySymbols.PESO},]'),
+                                                          '',
+                                                        );
+
+                                                        setState(() {
+                                                          splitepayamount =
+                                                              double.tryParse(
+                                                                      numericValue) ??
+                                                                  0;
+
+                                                          _remaining();
+                                                        });
+                                                      },
+                                                      decoration:
+                                                          const InputDecoration(
+                                                        hintText:
+                                                            'Enter amount',
+                                                        border:
+                                                            OutlineInputBorder(),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                                actions: [
+                                                  ElevatedButton(
+                                                      onPressed: () {
+                                                        String
+                                                            splitReferenceid =
+                                                            _splitReferenceidController
+                                                                .text;
+
+                                                        double totaltendered =
+                                                            splitcash +
+                                                                splitepayamount;
+
+                                                        String message = "";
+                                                        String title = "";
+
+                                                        if (totaltendered ==
+                                                            0) {
+                                                          message +=
+                                                              "Please enter amount to proceed.\n";
+                                                          title +=
+                                                              "[Enter Amount]";
+                                                        }
+                                                        if (totaltendered <
+                                                            calculateGrandTotal()) {
+                                                          message +=
+                                                              "Please enter the right amount received from e-payment or cash.\n";
+                                                          title +=
+                                                              "[Insufficient Funds]";
+                                                        }
+                                                        if (splitReferenceid ==
+                                                            "") {
+                                                          message +=
+                                                              "Please enter reference id.\n";
+                                                          title +=
+                                                              "[Reference ID]";
+                                                        }
+
+                                                        if (remaining > 0) {
+                                                          message +=
+                                                              "Remaining: $remaining\n";
+                                                          title +=
+                                                              "[Remaining Balance]";
+                                                        }
+
+                                                        if (splitEPaymentType ==
+                                                            'Select Payment Type') {
+                                                          message +=
+                                                              "Please select payment type\n";
+                                                          title +=
+                                                              "[Payment Type]";
+                                                        }
+
+                                                        if (message != "") {
+                                                          showDialog(
+                                                              context: context,
+                                                              builder:
+                                                                  (BuildContext
+                                                                      context) {
+                                                                return AlertDialog(
+                                                                  title: Text(
+                                                                      title),
+                                                                  content: Text(
+                                                                      message),
+                                                                );
+                                                              });
+                                                        } else {
+                                                          detailid++;
+
+                                                          _splitpayment(
+                                                            splitcash,
+                                                            splitepayamount,
+                                                            'SPLIT',
+                                                            splitReferenceid,
+                                                            splitEPaymentType,
+                                                            detailid.toString(),
+                                                            widget.fullname,
+                                                            jsonEncode(
+                                                                itemsList),
+                                                          );
+
+                                                          Navigator.pop(
+                                                              context);
+
+                                                          Navigator.pop(
+                                                              context);
+                                                        }
+                                                      },
+                                                      child: Text('Submit')),
+                                                  TextButton(
+                                                      onPressed: () {
+                                                        Navigator.of(context)
+                                                            .pop(); // Close the dialog
+                                                      },
+                                                      child: Text('Close'))
+                                                ],
+                                              );
+                                            });
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        minimumSize: const Size(120, 60),
+                                      ),
+                                      child: const Text('SPLIT'))
                                 ],
                               ),
                               actions: [
@@ -1861,6 +2438,13 @@ class _MyDashboardState extends State<MyDashboard> {
                                         .pop(); // Close the dialog
                                   },
                                   child: const Text('Close'),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.of(context)
+                                        .pop(); // Close the dialog
+                                  },
+                                  child: const Text('Submit'),
                                 ),
                               ],
                             );

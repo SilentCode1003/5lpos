@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/foundation.dart';
 
@@ -17,7 +18,9 @@ class POSTransaction {
       String items,
       String total,
       String cashier,
-      String amount) async {
+      String cash,
+      String ecash,
+      String branch) async {
     final url = Uri.parse('${Config.apiUrl}${Config.salesDetailAPI}');
     final response = await http.post(url, body: {
       'detailid': detailid,
@@ -30,7 +33,9 @@ class POSTransaction {
       'cashier': cashier,
       'paymentname': paymentname,
       'referenceid': referenceid,
-      'amount': amount
+      'cash': cash,
+      'ecash': ecash,
+      'branch': branch,
     });
 
     final responseData = json.decode(response.body);

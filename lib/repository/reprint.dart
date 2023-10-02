@@ -19,20 +19,23 @@ class ReprintingReceipt {
   double total;
   String epaymentname;
   String referenceid;
-  double amount;
+  double cash;
+  double ecash;
 
   ReprintingReceipt(
-      this.ornumber,
-      this.ordate,
-      this.ordescription,
-      this.orpaymenttype,
-      this.posid,
-      this.shift,
-      this.cashier,
-      this.total,
-      this.epaymentname,
-      this.referenceid,
-      this.amount);
+    this.ornumber,
+    this.ordate,
+    this.ordescription,
+    this.orpaymenttype,
+    this.posid,
+    this.shift,
+    this.cashier,
+    this.total,
+    this.epaymentname,
+    this.referenceid,
+    this.cash,
+    this.ecash,
+  );
 
   Helper helper = Helper();
   DatabaseHelper dbHelper = DatabaseHelper();
@@ -48,12 +51,17 @@ class ReprintingReceipt {
   }
 
   String customercash(cash) {
-    print('customercash');
     return helper.formatAsCurrency(cash);
   }
 
   String change(total, cash) {
-    double change = (cash - total);
+    double change = 0;
+
+    if (orpaymenttype != 'SPLIT') {
+      change = (cash - total);
+    } else {
+      change = (cash + ecash) - total;
+    }
 
     return helper.formatAsCurrency(change);
   }
@@ -185,7 +193,7 @@ class ReprintingReceipt {
               //   textAlign: pw.TextAlign.center,
               // ),
               // pw.SizedBox(height: 5),
-              if (orpaymenttype == 'EPAYMENT')
+              if (orpaymenttype == 'EPAYMENT' || orpaymenttype == 'SPLIT')
                 pw.Row(
                   children: [
                     pw.Container(
@@ -354,7 +362,7 @@ class ReprintingReceipt {
                   pw.Container(
                     width: 100,
                     child: pw.Text(
-                      customercash(amount),
+                      customercash(cash),
                       textAlign: pw.TextAlign.center,
                       style: pw.TextStyle(
                           fontSize: 8, fontWeight: pw.FontWeight.bold),
@@ -362,6 +370,28 @@ class ReprintingReceipt {
                   ),
                 ],
               ),
+              if (orpaymenttype == 'SPLIT')
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Container(
+                      width: 100,
+                      child: pw.Text(
+                        'E-Cash:',
+                        style: const pw.TextStyle(fontSize: 8),
+                      ),
+                    ),
+                    pw.Container(
+                      width: 100,
+                      child: pw.Text(
+                        customercash(ecash),
+                        textAlign: pw.TextAlign.center,
+                        style: pw.TextStyle(
+                            fontSize: 8, fontWeight: pw.FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
               pw.Row(
                 children: [
                   pw.Container(
@@ -374,7 +404,7 @@ class ReprintingReceipt {
                   pw.Container(
                     width: 100,
                     child: pw.Text(
-                      change(totalamtdue(items), amount),
+                      change(totalamtdue(items), cash),
                       textAlign: pw.TextAlign.center,
                       style: pw.TextStyle(
                           fontSize: 8, fontWeight: pw.FontWeight.bold),

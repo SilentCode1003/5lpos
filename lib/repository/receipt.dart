@@ -22,6 +22,7 @@ class Receipt {
   String paymenttype;
   String referenceid;
   String epaymenttype;
+  double ecash;
 
   Receipt(
       this.items,
@@ -35,7 +36,8 @@ class Receipt {
       this.tin,
       this.paymenttype,
       this.referenceid,
-      this.epaymenttype);
+      this.epaymenttype,
+      this.ecash);
 
   Helper helper = Helper();
   DatabaseHelper dbHelper = DatabaseHelper();
@@ -124,7 +126,13 @@ class Receipt {
   }
 
   String change(total, cash) {
-    double change = (cash - total);
+    double change = 0;
+
+    if (paymenttype != 'SPLIT') {
+      change = (cash - total);
+    } else {
+      change = (cash + ecash) - total;
+    }
 
     return formatAsCurrency(change);
   }
@@ -279,7 +287,7 @@ class Receipt {
               //   textAlign: pw.TextAlign.center,
               // ),
               // pw.SizedBox(height: 5),
-              if (paymenttype == 'EPAYMENT')
+              if (paymenttype == 'EPAYMENT' || paymenttype == 'SPLIT')
                 pw.Row(
                   children: [
                     pw.Container(
@@ -456,6 +464,28 @@ class Receipt {
                   ),
                 ],
               ),
+              if (paymenttype == 'SPLIT')
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Container(
+                      width: 100,
+                      child: pw.Text(
+                        'E-Cash:',
+                        style: const pw.TextStyle(fontSize: 8),
+                      ),
+                    ),
+                    pw.Container(
+                      width: 100,
+                      child: pw.Text(
+                        customercash(ecash),
+                        textAlign: pw.TextAlign.center,
+                        style: pw.TextStyle(
+                            fontSize: 8, fontWeight: pw.FontWeight.bold),
+                      ),
+                    ),
+                  ],
+                ),
               pw.Row(
                 children: [
                   pw.Container(
