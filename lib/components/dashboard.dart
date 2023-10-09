@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_multi_formatter/flutter_multi_formatter.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:pdf/pdf.dart';
+import 'package:pos2/api/discount.dart';
 import 'package:pos2/api/posshiftlog.dart';
 import 'package:pos2/components/loadingspinner.dart';
 import 'package:pos2/components/loginpage.dart';
@@ -53,6 +54,7 @@ class _MyDashboardState extends State<MyDashboard> {
   List<Map<String, dynamic>> itemsList = [];
   List<ProductPriceModel> productList = [];
   List<String> categoryList = [];
+  List<String> discountList = [];
   String companyname = "";
   String address = "";
   String tin = "";
@@ -73,6 +75,9 @@ class _MyDashboardState extends State<MyDashboard> {
   final TextEditingController _splitReferenceidController =
       TextEditingController();
   final TextEditingController _splitAmountController = TextEditingController();
+  final TextEditingController _discountFullnameController =
+      TextEditingController();
+  final TextEditingController _discountIDController = TextEditingController();
 
   Helper helper = Helper();
   DatabaseHelper dbHelper = DatabaseHelper();
@@ -84,6 +89,7 @@ class _MyDashboardState extends State<MyDashboard> {
     // _getbranch();
     _getposconfig();
     _getcategory();
+    _getdiscount();
     super.initState();
   }
 
@@ -95,6 +101,7 @@ class _MyDashboardState extends State<MyDashboard> {
     super.dispose();
   }
 
+// #region API CALLS
   Future<void> _getPOSShift(posid) async {
     final results = await POSShiftLogAPI().getPOSShift(posid);
     final jsonData = json.encode(results['data']);
@@ -484,6 +491,53 @@ class _MyDashboardState extends State<MyDashboard> {
     });
   }
 
+  Future<void> _getdiscountrate(type) async {
+    final results = await DiscountAPI().getDiscountRate(type);
+    final jsonData = json.encode(results['data']);
+
+    setState(() {
+      for (var data in json.decode(jsonData)) {
+        double discount =
+            ((calculateGrandTotal() * 1.12) * (data['rate'] / 100)) * -1;
+
+        if (calculateGrandTotal() == 0) {
+          showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  title: const Text('Discount'),
+                  content: const Text(
+                      'Can not do discount if empty transaction'),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: const Text('OK'),
+                    ),
+                  ],
+                );
+              });
+        } else {
+          addItem(type, discount, 1);
+        }
+      }
+    });
+  }
+
+  Future<void> _getdiscount() async {
+    final results = await DiscountAPI().getDiscount();
+    final jsonData = json.encode(results['data']);
+
+    setState(() {
+      for (var data in json.decode(jsonData)) {
+        discountList.add(data['name']);
+      }
+    });
+  }
+
+// #endregion
+// #region Payment methods
   String formatAsCurrency(double value) {
     return '₱ ${toCurrencyString(value.toString())}';
   }
@@ -1376,6 +1430,85 @@ class _MyDashboardState extends State<MyDashboard> {
     }
   }
 
+  Future<void> _discount() async {
+    final List<Widget> discount = List<Widget>.generate(
+        discountList.length,
+        (index) => SizedBox(
+              height: 60,
+              width: 120,
+              child: ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text(discountList[index]),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              TextField(
+                                controller: _discountIDController,
+                                decoration: InputDecoration(labelText: "ID"),
+                              ),
+                              TextField(
+                                controller: _discountFullnameController,
+                                decoration:
+                                    InputDecoration(labelText: "Fullname"),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.of(context).pop(); // Close the dialog
+                              },
+                              child: const Text('Close'),
+                            ),
+                            TextButton(
+                              onPressed: () {
+                                _getdiscountrate(discountList[index]);
+                                Navigator.of(context).pop(); // Close the dialog
+                              },
+                              child: const Text('Apply'),
+                            ),
+                          ],
+                        );
+                      });
+                },
+                child: Text(
+                  discountList[index],
+                  style: const TextStyle(
+                      fontSize: 16, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.center,
+                ),
+              ),
+            ));
+
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text("Discounts"),
+            content: Wrap(
+              crossAxisAlignment: WrapCrossAlignment.start,
+              spacing: 8,
+              runSpacing: 8,
+              children: discount,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close the dialog
+                },
+                child: const Text('Close'),
+              ),
+            ],
+          );
+        });
+  }
+
+// #endregion
   @override
   Widget build(BuildContext context) {
     final List<Widget> category = List<Widget>.generate(
@@ -1629,7 +1762,9 @@ class _MyDashboardState extends State<MyDashboard> {
                 runSpacing: 4,
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      _discount();
+                    },
                     style: ButtonStyle(
                       fixedSize: MaterialStateProperty.all(
                           const Size(120, 80)), // Adjust the size here

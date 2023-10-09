@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.brown),
+        colorScheme: ColorScheme.fromSwatch(primarySwatch: Colors.teal),
       ),
       initialRoute: '/', // Set the initial route
       home: const PosConfig(),
