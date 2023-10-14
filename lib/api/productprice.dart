@@ -4,10 +4,12 @@ import '../config.dart';
 import 'package:http/http.dart' as http;
 
 class ProductPrice {
-  Future<Map<String, dynamic>> getcategoryitems(String category) async {
+  Future<Map<String, dynamic>> getcategoryitems(
+      String category, String branchid) async {
     final url = Uri.parse('${Config.apiUrl}${Config.getcategoryAPI}');
     final response = await http.post(url, body: {
       'category': category,
+      'branchid': branchid,
     });
 
     final responseData = json.decode(response.body);

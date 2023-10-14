@@ -472,7 +472,7 @@ class _MyDashboardState extends State<MyDashboard> {
   }
 
   Future<void> _getcategoryitems(String category) async {
-    final result = await ProductPrice().getcategoryitems(category);
+    final result = await ProductPrice().getcategoryitems(category, branchid);
     final List<dynamic> jsonData = json.decode(result['data']);
 
     if (result['msg'] == 'success') {
@@ -704,11 +704,13 @@ class _MyDashboardState extends State<MyDashboard> {
                   height: 60,
                   width: 120,
                   child: ElevatedButton(
-                    onPressed: () {
-                      // Add your button press logic here
-                      addItem(productList[index].description,
-                          double.parse(productList[index].price), 1);
-                    },
+                    onPressed: (productList[index].quantity <= 0)
+                        ? null
+                        : () {
+                            // Add your button press logic here
+                            addItem(productList[index].description,
+                                double.parse(productList[index].price), 1);
+                          },
                     child: Text(
                       productList[index].description,
                       style: const TextStyle(

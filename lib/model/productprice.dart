@@ -5,9 +5,10 @@ class ProductPriceModel {
   final String productimage;
   final String price;
   final String category;
+  final int quantity;
 
   ProductPriceModel(this.productid, this.description, this.barcode,
-      this.productimage, this.price, this.category);
+      this.productimage, this.price, this.category, this.quantity);
 
   factory ProductPriceModel.fromJson(Map<String, dynamic> json) {
     return ProductPriceModel(
@@ -17,6 +18,7 @@ class ProductPriceModel {
       json['productimage'],
       json['price'],
       json['category'],
+      json['quantity'],
     );
   }
 }
