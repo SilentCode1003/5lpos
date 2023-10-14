@@ -2,10 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:pos2/components/posconfig.dart';
+import 'package:pos2/repository/dbhelper.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
   if (Platform.isAndroid) {
+    DatabaseHelper dh = DatabaseHelper();
+    dh.database;
   } else if (Platform.isWindows) {
     // Initialize the sqflite FFI bindings
     sqfliteFfiInit();

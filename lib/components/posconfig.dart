@@ -326,7 +326,8 @@ class _PosConfigState extends State<PosConfig> {
           // Process data
         }
         Navigator.pop(context);
-        return 'success';
+        return
+         'success';
       } else {
         await dbHelper.insertItem({
           "emailaddress": emailaddress,

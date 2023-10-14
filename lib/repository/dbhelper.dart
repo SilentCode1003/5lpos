@@ -27,10 +27,13 @@ class DatabaseHelper {
   Future<void> _createTables(Database db, int version) async {
     await db.execute(
         'CREATE TABLE pos (posid int, posname varchar(10), serial varchar(20), min varchar(50), ptu varchar(50))');
+    print('done creating pos table');
     await db.execute(
         'CREATE TABLE branch (branchid varchar(5), branchname varchar(300), tin varchar(60), address varchar(300), logo TEXT)');
+    print('done creating branch table');
     await db.execute(
         'CREATE TABLE email (emailaddress varchar(300), emailpassword varchar(300), emailserver varchar(300))');
+    print('done creating email table');
   }
 
   Future<int> insertItem(Map<String, dynamic> item, String tablename) async {
@@ -44,6 +47,4 @@ class DatabaseHelper {
 
     await db.update(tablename, data, where: condition, whereArgs: [agrs]);
   }
-
-
 }

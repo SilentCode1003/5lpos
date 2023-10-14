@@ -65,6 +65,7 @@ class _MyDashboardState extends State<MyDashboard> {
   String branchid = "";
   bool isStartShift = false;
   bool isEndShift = false;
+  List<Map<String, dynamic>> discountDetail = [];
 
   double splitcash = 0;
   double splitepayamount = 0;
@@ -80,7 +81,6 @@ class _MyDashboardState extends State<MyDashboard> {
   final TextEditingController _discountFullnameController =
       TextEditingController();
   final TextEditingController _discountIDController = TextEditingController();
-  final List<Map<String, dynamic>> discountDetail = [];
 
   Helper helper = Helper();
   DatabaseHelper dbHelper = DatabaseHelper();
@@ -523,6 +523,19 @@ class _MyDashboardState extends State<MyDashboard> {
                 );
               });
         } else {
+          String fullname = _discountFullnameController.text;
+          String id = _discountIDController.text;
+
+          discountDetail = [
+            {
+              'detailid': detailid,
+              'discountid': data['discountid'],
+              'customerinfo': [
+                {'id': id, 'fullname': fullname}
+              ],
+              'amount': discount,
+            }
+          ];
           addItem('Discount ($type)', discount, 1);
         }
       }
@@ -999,7 +1012,8 @@ class _MyDashboardState extends State<MyDashboard> {
           cashier,
           cashAmount.toString(),
           '0',
-          branchid);
+          branchid,
+          jsonEncode(discountDetail));
       final pdfBytes = await Receipt(
               itemsList,
               cashAmount,
@@ -1220,10 +1234,13 @@ class _MyDashboardState extends State<MyDashboard> {
   void _clearItems() {
     setState(() {
       itemsList.clear();
+      discountDetail.clear();
       _referenceidController.clear();
       _splitReferenceidController.clear();
       _splitCashController.clear();
       _splitAmountController.clear();
+      _discountFullnameController.clear();
+      _discountIDController.clear();
     });
   }
 
@@ -1249,20 +1266,20 @@ class _MyDashboardState extends State<MyDashboard> {
     final TextEditingController _emailController = TextEditingController();
     double total = cashamount + epayamount;
     final result = await POSTransaction().sending(
-      detailid,
-      helper.GetCurrentDatetime(),
-      posid,
-      shift,
-      paymentmethod,
-      referenceid,
-      epaymentname,
-      items,
-      total.toString(),
-      cashier,
-      cashamount.toString(),
-      epayamount.toString(),
-      branchid,
-    );
+        detailid,
+        helper.GetCurrentDatetime(),
+        posid,
+        shift,
+        paymentmethod,
+        referenceid,
+        epaymentname,
+        items,
+        total.toString(),
+        cashier,
+        cashamount.toString(),
+        epayamount.toString(),
+        branchid,
+        jsonEncode(discountDetail));
 
     final pdfBytes = await Receipt(
             itemsList,

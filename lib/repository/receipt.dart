@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_multi_formatter/formatters/formatter_utils.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:pos2/api/promo.dart';
 import 'package:pos2/repository/customerhelper.dart';
 import 'package:pos2/repository/dbhelper.dart';
 import 'package:sqflite_common/sqlite_api.dart';
@@ -181,6 +182,21 @@ class Receipt {
     return 'present the receipt to claim a freebie test';
   }
 
+  Future<String> promo() async {
+    final results = await PromoAPI().getPromo();
+    final jsonData = json.encode(results['data']);
+    String promoDetails = '';
+
+    for (var data in json.decode(jsonData)) {
+      if (totalamtdue(items) > double.parse(data['condition'])) {
+        promoDetails =
+            '${data['name']}\n\n${data['description']}\nDTI: ${data['dtipermit']}\nUntil: ${data['startdate']} to ${data['enddate']}';
+      }
+    }
+
+    return promoDetails;
+  }
+
   Future<Uint8List> printReceipt() async {
     String id = '';
     String posname = '';
@@ -193,6 +209,8 @@ class Receipt {
     String tin = '';
     String address = '';
     List<String> logo = [];
+
+    String promodetails = await promo();
 
     PdfPageFormat format = PdfPageFormat.roll80;
     final pdf = pw.Document(version: PdfVersion.pdf_1_5, compress: true);
@@ -672,7 +690,6 @@ class Receipt {
                 style:
                     pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),
-
               //////PROMO//////////
               pw.Container(
                 height: 0.5, // Set the height of the divider
@@ -681,17 +698,7 @@ class Receipt {
                     vertical: 5), // Adjust vertical spacing
               ),
               pw.Text(
-                'You have free humberger',
-                style:
-                    pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Text(
-                'PROMO CODE: AAE45845',
-                style:
-                    pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
-              ),
-              pw.Text(
-                'DTI FTEB Permit No.: 151601',
+                promodetails,
                 style:
                     pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),

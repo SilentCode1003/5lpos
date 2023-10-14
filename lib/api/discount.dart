@@ -33,4 +33,25 @@ class DiscountAPI {
 
     return data;
   }
+
+  Future<Map<String, dynamic>> salesDiscount(String detailid, String discountid,
+      List<Map<String, dynamic>> customerinfo, String amount) async {
+    final url = Uri.parse('${Config.apiUrl}${Config.salesDiscountAPI}');
+    final response = await http.post(url, body: {
+      'detailid': detailid,
+      'discountid': discountid,
+      'customerinfo': customerinfo,
+      'amount': amount
+    });
+
+    final responseData = json.decode(response.body);
+    final status = response.statusCode;
+    final msg = responseData['msg'];
+    final results = responseData['data'];
+
+    Map<String, dynamic> data = {};
+    data = {'msg': msg, 'status': status, 'data': results};
+
+    return data;
+  }
 }

@@ -18,5 +18,7 @@ class Config {
   static const String endShiftAPI = 'posshiftlog/endshift';
   static const String discountRateAPI = 'discount/getactive';
   static const String getDiscountAPI = 'discount/load';
-  static const String getpaymentAPI = 'payment/getactive';
+  static const String getPaymentAPI = 'payment/getactive';
+  static const String getPromoAPI = 'promo/getactive';
+  static const String salesDiscountAPI = 'promo/salesdiscount';
 }
