@@ -1,9 +1,5 @@
-import 'dart:io';
-
-import 'package:flutter_multi_formatter/formatters/formatter_utils.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:sqflite/sqlite_api.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 class DatabaseHelper {
@@ -34,11 +30,18 @@ class DatabaseHelper {
     await db.execute(
         'CREATE TABLE email (emailaddress varchar(300), emailpassword varchar(300), emailserver varchar(300))');
     print('done creating email table');
+
+    await db.execute(
+        'CREATE TABLE login (employeeid varchar(300), fullname varchar(300), accesstype varchar(300), positiontype varchar(300))');
+    print('done creating login table');
+    await db.execute(
+        'CREATE TABLE printer (name varchar(300), ipaddress varchar(15), paperwith varchar(120))');
+    print('done creating printer table');
   }
 
   Future<int> insertItem(Map<String, dynamic> item, String tablename) async {
     Database db = await database;
-    return await db.insert('$tablename', item);
+    return await db.insert(tablename, item);
   }
 
   Future<void> updateItem(Map<String, dynamic> data, String tablename,

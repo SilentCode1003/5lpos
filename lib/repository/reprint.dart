@@ -1,10 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:pdf/pdf.dart';
-import 'package:pos2/repository/customerhelper.dart';
-import 'package:pos2/repository/dbhelper.dart';
-import 'package:sqflite_common/sqlite_api.dart';
+import 'package:fiveLPOS/repository/customerhelper.dart';
+import 'package:fiveLPOS/repository/dbhelper.dart';
 import 'package:pdf/widgets.dart' as pw;
 
 class ReprintingReceipt {
@@ -101,24 +101,34 @@ class ReprintingReceipt {
     PdfPageFormat format = PdfPageFormat.roll80;
     final pdf = pw.Document(version: PdfVersion.pdf_1_5, compress: true);
 
-    Database db = await dbHelper.database;
-    List<Map<String, dynamic>> posconfig = await db.query('pos');
-    for (var pos in posconfig) {
-      id = pos['posid'].toString();
-      posname = pos['posname'];
-      serial = pos['serial'];
-      min = pos['min'];
-      ptu = 'PTU: ${pos['ptu']}';
+    Map<String, dynamic> pos = {};
+    Map<String, dynamic> branch = {};
+
+    if (Platform.isWindows) {
+      pos = await Helper().readJsonToFile('pos.json');
     }
 
-    List<Map<String, dynamic>> branchconfig = await db.query('branch');
-    for (var branch in branchconfig) {
-      branchid = branch['branchid'].toString();
-      branchname = branch['branchname'];
-      tin = 'VAT REG TIN: ${branch['tin']}';
-      address = branch['address'];
-      logo = utf8.decode(base64.decode(branch['logo'])).split('<svg');
+    if (Platform.isAndroid) {
+      pos = await Helper().JsonToFileRead('pos.json');
     }
+    id = pos['posid'].toString();
+    posname = pos['posname'];
+    serial = pos['serial'];
+    min = pos['min'];
+    ptu = 'PTU: ${pos['ptu']}';
+
+    if (Platform.isWindows) {
+      branch = await Helper().readJsonToFile('branch.json');
+    }
+
+    if (Platform.isAndroid) {
+      branch = await Helper().JsonToFileRead('branch.json');
+    }
+    branchid = branch['branchid'].toString();
+    branchname = branch['branchname'];
+    tin = 'VAT REG TIN: ${branch['tin']}';
+    address = branch['address'];
+    logo = utf8.decode(base64.decode(branch['logo'])).split('<svg');
 
     List<Map<String, dynamic>> items =
         List<Map<String, dynamic>>.from(jsonDecode(ordescription));

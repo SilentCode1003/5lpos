@@ -1,15 +1,11 @@
-import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pos2/repository/customerhelper.dart';
-import 'package:pos2/repository/dbhelper.dart';
-import 'package:sqflite_common/sqlite_api.dart';
+import 'package:fiveLPOS/repository/customerhelper.dart';
+import 'package:fiveLPOS/repository/dbhelper.dart';
 
 class Email {
   DatabaseHelper dbHelper = DatabaseHelper();
@@ -40,32 +36,37 @@ class Email {
     String emailserver = '';
 
     String date = helper.GetCurrentDatetime();
+    Map<String, dynamic> posconfig = {};
+    Map<String, dynamic> branchconfig = {};
+    Map<String, dynamic> emailconfig = {};
 
-    Database db = await dbHelper.database;
-    List<Map<String, dynamic>> posconfig = await db.query('pos');
-    for (var pos in posconfig) {
-      id = pos['posid'].toString();
-      posname = pos['posname'];
-      serial = pos['serial'];
-      min = pos['min'];
-      ptu = 'PTU: ${pos['ptu']}';
+    if (Platform.isWindows) {
+      posconfig = await Helper().readJsonToFile('pos.json');
+      branchconfig = await Helper().readJsonToFile('branch.json');
+      emailconfig = await Helper().readJsonToFile('email.json');
     }
 
-    List<Map<String, dynamic>> branchconfig = await db.query('branch');
-    for (var branch in branchconfig) {
-      branchid = branch['branchid'].toString();
-      branchname = branch['branchname'];
-      tin = 'VAT REG TIN: ${branch['tin']}';
-      address = branch['address'].toString().split(',').toList();
-      logo = branch['logo'];
+    if (Platform.isAndroid) {
+      posconfig = await Helper().JsonToFileRead('pos.json');
+      branchconfig = await Helper().JsonToFileRead('branch.json');
+      emailconfig = await Helper().JsonToFileRead('email.json');
     }
 
-    List<Map<String, dynamic>> emailconfig = await db.query('email');
-    for (var email in emailconfig) {
-      username = email['emailaddress'];
-      password = email['emailpassword'];
-      emailserver = email['emailserver'];
-    }
+    id = posconfig['posid'].toString();
+    posname = posconfig['posname'];
+    serial = posconfig['serial'];
+    min = posconfig['min'];
+    ptu = 'PTU: ${posconfig['ptu']}';
+
+    branchid = branchconfig['branchid'].toString();
+    branchname = branchconfig['branchname'];
+    tin = 'VAT REG TIN: ${branchconfig['tin']}';
+    address = branchconfig['address'].toString().split(',').toList();
+    logo = branchconfig['logo'];
+
+    username = emailconfig['emailaddress'];
+    password = emailconfig['emailpassword'];
+    emailserver = emailconfig['emailserver'];
 
     String location = '';
     for (String addr in address) {

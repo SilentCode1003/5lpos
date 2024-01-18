@@ -9,7 +9,7 @@ class UsbPrinterWindows {
 
       return result;
     } on PlatformException catch (e) {
-      return "Printing failed: ${e.toString()}";
+      return 'Printing failed: ${e.toString()}';
     }
   }
 }

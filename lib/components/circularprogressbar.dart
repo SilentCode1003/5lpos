@@ -13,9 +13,9 @@ class CircularProgressBar extends StatelessWidget {
         height: double.maxFinite,
         width: double.maxFinite,
         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16.0),
-          Text('$status'),
+          const CircularProgressIndicator(),
+          const SizedBox(height: 16.0),
+          Text(status),
         ]),
       ),
     );

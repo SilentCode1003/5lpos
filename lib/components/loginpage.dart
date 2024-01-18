@@ -1,30 +1,35 @@
 import 'dart:convert';
 
+import 'package:esc_pos_printer/esc_pos_printer.dart';
+import 'package:esc_pos_utils/esc_pos_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:pos2/components/dashboard.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:fiveLPOS/components/dashboard.dart';
 
 import '../model/userinfo.dart';
 import '../api/login.dart';
 import 'loadingspinner.dart';
 
-void main() {
-  runApp(MyApp());
-}
+// void main() {
+//   runApp(MyApp());
+// }
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'POS Shift Login',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: LoginPage(),
-    );
-  }
-}
+// class MyApp extends StatelessWidget {
+//   @override
+//   Widget build(BuildContext context) {
+//     return MaterialApp(
+//       title: 'POS Shift Login',
+//       theme: ThemeData(
+//         primarySwatch: Colors.blue,
+//       ),
+//       home: LoginPage(),
+//     );
+//   }
+// }
 
 class LoginPage extends StatefulWidget {
+  String logo;
+  LoginPage({super.key, required this.logo});
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -32,6 +37,29 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  String branchid = '';
+  String branchname = '';
+  String tin = '';
+  String address = '';
+  String branchlogo = '';
+
+  // DatabaseHelper dbHelper = DatabaseHelper();
+
+  var _printer;
+
+  @override
+  void initState() {
+    // _getbranchdetail(.replaceAll(RegExp(r'\n'), ''));
+    setState(() {
+      List<String> logo =
+          utf8.decode(base64.decode(widget.logo)).split('<svg ');
+      branchlogo = '<svg ${logo[1].replaceAll(RegExp(r'\n'), ' ')}';
+      _printerinitiate();
+    });
+
+    // print(branchlogo);
+    super.initState();
+  }
 
   Future<void> _login() async {
     String username = _usernameController.text;
@@ -41,12 +69,15 @@ class _LoginPageState extends State<LoginPage> {
         context: context,
         barrierDismissible: false,
         builder: (BuildContext context) {
-          return  LoadingSpinner(message: 'Loading...',);
+          return LoadingSpinner(
+            message: 'Loading...',
+          );
         });
 
     final response = await Login().authenticate(username, password);
 
     if (response['msg'] == 'success') {
+      Navigator.of(context).pop();
       final jsonData = json.encode(response['data']);
       final results = json.decode(jsonData);
       UserInfoModel userinfomodel = UserInfoModel(
@@ -67,6 +98,8 @@ class _LoginPageState extends State<LoginPage> {
                   employeeid: userinfomodel.employeeid,
                   fullname: userinfomodel.fullname,
                   positiontype: userinfomodel.position,
+                  logo: branchlogo,
+                  printer: _printer,
                 )),
       );
     } else {
@@ -87,6 +120,21 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+  void _printerinitiate() async {
+    const PaperSize paper = PaperSize.mm80;
+    final profile = await CapabilityProfile.load();
+
+    print(profile.name);
+
+    final printer = NetworkPrinter(paper, profile);
+
+    final PosPrintResult res = await printer.connect('192.168.10.120',
+        port: 9100, timeout: const Duration(seconds: 1));
+
+    print('Initial Print: ${res.msg} ${printer.host} ${printer.port}');
+    _printer = printer;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -97,13 +145,17 @@ class _LoginPageState extends State<LoginPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Container(
-                height: 200,
-                width: double.infinity,
-                alignment: Alignment.center,
-                child: Image.asset('assets/asvesti.png'),
-              ),
+                  height: 200,
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  child: SizedBox(
+                      width: double.maxFinite,
+                      height: double.maxFinite,
+                      child: ClipOval(
+                        child: SvgPicture.string(branchlogo),
+                      ))),
               Padding(
-                padding: EdgeInsets.all(40),
+                padding: const EdgeInsets.all(40),
                 child: SizedBox(
                   width: 400,
                   child: Column(

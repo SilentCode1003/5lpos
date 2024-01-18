@@ -1,4 +1,4 @@
-name: pos2
+name: fiveLPOS
 description: A new Flutter project.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
@@ -39,15 +39,24 @@ dependencies:
   intl: ^0.18.1
   font_awesome_flutter: ^10.5.0
   http: ^1.1.0
-  usb_serial: ^0.4.0
-  pdf: ^3.8.4
+  usb_serial: ^0.5.1
+  # pdf: ^3.8.4
   path_provider: ^2.0.15
   flutter_svg: ^2.0.7
-  printing: ^5.11.0
+  printing: 5.3.0
   sqflite: ^2.2.8+4
   sqflite_common: ^2.5.0
   sqflite_common_ffi: ^2.3.0+2
   mailer: ^6.0.1
+  sqlite3: ^2.1.0
+  # esc_pos_utils: ^1.1.0
+  # flutter_esc_pos_network: ^1.0.2
+  # flutter_esc_pos_utils: ^0.1.8
+  image: ^3.3.0
+  # esc_pos_printer: ^4.1.0
+  pdf: ^3.4.1
+  esc_pos_utils: ^1.0.0
+  esc_pos_printer: ^4.1.0
 
 dev_dependencies:
   flutter_test:
@@ -74,7 +83,6 @@ flutter:
   # To add assets to your application, add an assets section, like this:
   assets:
     - assets/
-    - assets/branch.json
   #   - images/a_dot_ham.jpeg
 
   # An image asset can refer to one or more resolution-specific "variants", see

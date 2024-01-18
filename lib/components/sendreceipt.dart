@@ -14,8 +14,8 @@ class _SendReceiptState extends State<SendReceipt> {
       title: const Text('Customer Email'),
       content: const Text(''),
       actions: [
-        TextButton(onPressed: () {}, child: const Text("Send")),
-        TextButton(onPressed: () {}, child: const Text("Close")),
+        TextButton(onPressed: () {}, child: const Text('Send')),
+        TextButton(onPressed: () {}, child: const Text('Close')),
       ],
     );
   }

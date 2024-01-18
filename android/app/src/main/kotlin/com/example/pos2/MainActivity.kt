@@ -1,4 +1,4 @@
-package com.example.pos2
+package com.example.fiveLPOS
 
 import io.flutter.embedding.android.FlutterActivity
 
